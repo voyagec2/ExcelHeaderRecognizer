@@ -1,12 +1,9 @@
-import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.poi.hssf.usermodel.HSSFCellStyle;
-import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
@@ -15,8 +12,6 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFCellStyle;
-
 import core.LabelReader;
 import core.SimilarityHandler;
 import utils.ExcelHandler;
@@ -27,24 +22,27 @@ public class Recognizer {
 	private static String outputDirPath = "标注文件输出";	
 	private static final String EXCEL_XLS = "xls";  
     private static final String EXCEL_XLSX = "xlsx";  
+    private static String userDir = System.getProperty("user.dir");
     
 	public static void main(String[] args) throws IOException {
+		//System.out.println(userDir);
+		
 		LabelReader LR = new LabelReader(labelPath);
 		HashMap<String,String> labelMap = LR.getAllLabelData();
 		
 		SimilarityHandler SH = new SimilarityHandler(labelMap);
 		//System.out.println(labelMap.size());
-		File file = new File(inputDirPath);    
+		File file = new File(userDir+"\\"+inputDirPath);    
         File[] fileArray = file.listFiles(); 
         
         for(int fileIndex=0;fileIndex<fileArray.length;fileIndex++){      //文件层
             if(fileArray[fileIndex].isFile()){     
                 String fileName = fileArray[fileIndex].getName();
-                System.out.println(fileName);
+                System.out.println("准备处理"+fileName+":");
             	if (fileName.endsWith(EXCEL_XLS) || fileName.endsWith(EXCEL_XLSX)) {   //确定是EXCEL文件
-            		ExcelHandler EH = new ExcelHandler(inputDirPath+"\\"+fileName);   //打开这个excel       		
+            		ExcelHandler EH = new ExcelHandler(userDir+"\\"+inputDirPath+"\\"+fileName);   //打开这个excel       		
             		Workbook wb = EH.getWorkbook();            		
-            		List<List<List<String>>> wbData = EH.getAllData();  //获取所有sheet的数据
+            		List<List<List<String>>> wbData = EH.getWorkbookData();  //获取所有sheet的数据
             		
             		for (int sheetIndex = 0; sheetIndex < wbData.size(); sheetIndex++){    //Sheet层  
             			Sheet sheet = wb.getSheetAt(sheetIndex);
@@ -54,7 +52,7 @@ public class Recognizer {
             			int columnNum = 0;
             			int lastHeaderRow = 0;    //记录表头所在的最后一行位置            			
             			
-            			System.out.println("sheetData.size = " + rowNum);
+            			//System.out.println("sheetData.size = " + rowNum);
             			
             			//以所有行的最大列数为整个Sheet的列数，因为存在单元格合并的情况
             			for(int i=0; i<rowNum; i++) {
@@ -95,11 +93,11 @@ public class Recognizer {
             			}
             			
 
-            			for(int i=0;i<headers.size();i++) {
-            				System.out.print(headers.get(i)+ " ");
-            			}
-            			System.out.println();
-            			System.out.println(lastHeaderRow+" "+rowNum);
+            			//for(int i=0;i<headers.size();i++) {
+            			//	System.out.print(headers.get(i)+ " ");
+            			//}
+            			//System.out.println();
+            			//System.out.println(lastHeaderRow+" "+rowNum);
             			
             			sheet.shiftRows(lastHeaderRow+1, rowNum, 1,true,true);  
             			
@@ -113,14 +111,15 @@ public class Recognizer {
             	        style.setFillForegroundColor(IndexedColors.BROWN.getIndex());  
             	        
             			for (int i=0;i<headers.size();i++) {
-            				System.out.print(SH.getLabel(headers.get(i))+" ");
+            				//System.out.print(SH.getLabel(headers.get(i))+" ");
             				Cell cell = row.createCell(i);
-            				cell.setCellValue(SH.getLabel(headers.get(i)));   //插入标签
+            				cell.setCellValue(SH.getLabel(headers.get(i), 0.667));   //插入标签
             				cell.setCellStyle(style);
             			} 
-            			System.out.println();
+            			//System.out.println();
             		}
-            		EH.saveExcel(wb, outputDirPath+"\\"+fileName);			//保存到输出文件夹
+            		EH.saveExcel(wb, userDir+"\\"+outputDirPath+"\\"+fileName);			//保存到输出文件夹
+            		System.out.println(fileName+"处理完毕，保存成功");
             	}                
             }            
         }  	 

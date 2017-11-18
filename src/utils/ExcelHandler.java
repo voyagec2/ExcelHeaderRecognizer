@@ -29,6 +29,8 @@ public class ExcelHandler {
     
     private static String excelPath = null;  
     private static Workbook wb = null;
+    private static List<List<List<String>>> wbData = null;
+    private static int sheetNum = 0;
     
     /**
      * 构造函数 
@@ -44,18 +46,29 @@ public class ExcelHandler {
         }else if(file.getName().endsWith(EXCEL_XLSX)){  // Excel 2007/2010  
             wb = new XSSFWorkbook(in);  
         }   
+        wbData = getAllData();  
+        sheetNum = wbData.size();
     }
     
     public Workbook getWorkbook() {  
         return wb;
     }  
     
+    public List<List<List<String>>> getWorkbookData() {
+    	return wbData;
+    }
+    
+    public int getSheetNum() {
+    	return sheetNum;
+    }
+    
+    
     /**
      * 获取Excel中的所有数据
      * @return
      * @throws IOException 
      */
-    public List<List<List<String>>> getAllData() throws IOException {    	
+    private List<List<List<String>>> getAllData() throws IOException {    	
     	List<List<List<String>>> wbData = new ArrayList<List<List<String>>>();    	
     	for (int sheetIndex = 0; sheetIndex < wb.getNumberOfSheets(); sheetIndex++) {
     		Sheet sheet = wb.getSheetAt(sheetIndex);  		
@@ -78,6 +91,122 @@ public class ExcelHandler {
 		}		
 		return wbData;
     }
+    
+    /**
+     * 获取Excel中的表头所在结尾行
+     * @return
+     * @throws IOException 
+     */
+    public int getLastHeaderRow(int sheetIndex) {
+    	List<List<String>> sheetData = wbData.get(sheetIndex);
+		List<String> headers = new ArrayList<String>();	     //存储表头
+		int rowNum = sheetData.size();             
+		int columnNum = 0;
+		int lastHeaderRow = 0;    //记录表头所在的最后一行位置            			
+		//以所有行的最大列数为整个Sheet的列数，因为存在单元格合并的情况
+		for(int i=0; i<rowNum; i++) {
+			if (sheetData.get(i).size()>columnNum)
+				columnNum = sheetData.get(i).size();    
+		}				 
+		for(int i=0; i<rowNum; i++) {      	
+			List<String> rowData = sheetData.get(i);
+			int sum = 1; //计算一行内 将合并单元格视作一格后的列数，以此判断是否为表头行
+			String lastValue = "";
+			for(int j=0; j< rowData.size(); j++) {					
+				if (rowData.get(j).equals(lastValue) || rowData.get(j) == null || rowData.get(j).equals("")) 
+					continue;
+				lastValue = rowData.get(j);
+				sum ++;
+			}  
+			//System.out.println(i+" " + sum+ " " + row.getLastCellNum());
+			if (sum <= columnNum / 3)   //暂时以不同单元格数与总列数的1/3的大小关系来判别该行是否为表头行
+				continue;
+			if (headers.isEmpty()) {  //如果表头行没有存值，直接将当前行的所有值赋予表头行
+				headers = rowData;
+			}
+			else {
+				boolean flag = false;
+				for(int j=0;j<headers.size();j++) {
+					flag = flag || headers.get(j).equals(rowData.get(j));  //判断是否有当前行元素与表头元素相同					
+				}
+				if (!flag) { 
+					lastHeaderRow = i-1;
+					break;   // 如果没有任意一格相同 说明表头继承关系结束， 跳出循环
+				}
+				for(int j=0;j<headers.size();j++) {
+					if (headers.get(j).equals(rowData.get(j))) continue;
+					headers.set(j, headers.get(j) + "." + rowData.get(j));   //对表头进行组合 
+				}
+			}	    
+		}
+		
+		return lastHeaderRow;    	
+    	
+    }
+    
+    /**
+     * 获取Excel中的标签
+     * @return
+     * @throws IOException 
+     */
+    public List<String> getLabel(int sheetIndex) {
+    	List<List<String>> sheetData = wbData.get(sheetIndex);
+		List<String> labels = new ArrayList<String>();	     //存储标签
+		int lastHeaderRow = getLastHeaderRow(sheetIndex);
+		return sheetData.get(lastHeaderRow+1);	    	
+    }
+    
+    /**
+     * 获取Excel中的表头
+     * @return
+     * @throws IOException 
+     */
+    public List<String> getHeader(int sheetIndex) {
+    	List<List<String>> sheetData = wbData.get(sheetIndex);
+		List<String> headers = new ArrayList<String>();	     //存储表头
+		int rowNum = sheetData.size();             
+		int columnNum = 0;         			
+		//以所有行的最大列数为整个Sheet的列数，因为存在单元格合并的情况
+		for(int i=0; i<rowNum; i++) {
+			if (sheetData.get(i).size()>columnNum)
+				columnNum = sheetData.get(i).size();    
+		}				 
+		for(int i=0; i<rowNum; i++) {      	
+			List<String> rowData = sheetData.get(i);
+			int sum = 1; //计算一行内 将合并单元格视作一格后的列数，以此判断是否为表头行
+			String lastValue = "";
+			for(int j=0; j< rowData.size(); j++) {					
+				if (rowData.get(j).equals(lastValue) || rowData.get(j) == null || rowData.get(j).equals("")) 
+					continue;
+				lastValue = rowData.get(j);
+				sum ++;
+			}  
+			//System.out.println(i+" " + sum+ " " + row.getLastCellNum());
+			if (sum <= columnNum / 3)   //暂时以不同单元格数与总列数的1/3的大小关系来判别该行是否为表头行
+				continue;
+			if (headers.isEmpty()) {  //如果表头行没有存值，直接将当前行的所有值赋予表头行
+				headers = rowData;
+			}
+			else {
+				boolean flag = false;
+				for(int j=0;j<headers.size();j++) {
+					flag = flag || headers.get(j).equals(rowData.get(j));  //判断是否有当前行元素与表头元素相同					
+				}
+				if (!flag) { 
+					break;   // 如果没有任意一格相同 说明表头继承关系结束， 跳出循环
+				}
+				for(int j=0;j<headers.size();j++) {
+					if (headers.get(j).equals(rowData.get(j))) continue;
+					headers.set(j, headers.get(j) + "." + rowData.get(j));   //对表头进行组合 
+				}
+			}	    
+		}
+		
+		return headers;   	
+    }
+    
+    
+    
     /** 
      * 保存工作薄 
      * @param wb 

@@ -1,20 +1,18 @@
 package core;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
 
 public class SimilarityHandler {
 	
-	private static HashMap<String,String> labelMap = null;
+	private static Map<String,String> labelMap = null;
 	
 	/*
 	 * 构造函数 
 	 */
-	public SimilarityHandler(HashMap<String,String> Header2Label) {		
+	public SimilarityHandler(Map<String,String> Header2Label) {		
 		labelMap = Header2Label;
-		//for (Entry<String, String> entry : labelMap.entrySet()) {		
-		//	System.out.println( entry.getKey()+ " " + entry.getValue());
-		//}
 	}
 	
 	/*
@@ -22,17 +20,19 @@ public class SimilarityHandler {
 	 * @return
 	 * @param text
 	 */
-	public String getLabel(String text) {		
-		double maxSimilarity = text.length()*10;
+	public String getLabel(String text, double threshold) {		
+		double maxSimilarty = 0;
 		String mostSimilarityOne = ""; 		
 		for (Entry<String, String> entry : labelMap.entrySet()) {			
 			double similarity = levenshteinSimilarity(text, entry.getKey());		    
-		    if (similarity < maxSimilarity) {
-		    	maxSimilarity = similarity;
+		    if (similarity > maxSimilarty) {
+		    	maxSimilarty = similarity ;
 		    	mostSimilarityOne = entry.getValue(); 
 		    }		  
-		}  		
-		return mostSimilarityOne;		
+		}  	
+		//System.out.println(text + " " + minEdit + " " + mostSimilarityOne + " "+text.length());
+		if ( maxSimilarty < threshold) return "";
+			else return mostSimilarityOne;		
 	}
 	
 	/*
@@ -45,7 +45,7 @@ public class SimilarityHandler {
 	}
 	/*
 	 * 编辑距离
-	 * @return
+	 * @return double 0~1
 	 * @param source target
 	 */
 	public double levenshteinSimilarity(String source, String target) {
@@ -74,6 +74,14 @@ public class SimilarityHandler {
 				distance_matrix[i][j] = Math.min(distance_matrix[i-1][j-1]+cost, Math.min(distance_matrix[i-1][j]+1, distance_matrix[i][j-1]+1));
 			}
 		}
-		return distance_matrix[m][n];
+		
+		double Similarity = 0;
+		if (distance_matrix[m][n] == m+n)    // 两字符串没有任何相等的字符，相似度为0 
+			 Similarity = 0;
+		else if (distance_matrix[m][n] == 0) // 两字符串完全相等，相似度为1
+			 Similarity = 1;
+		else 
+			Similarity = 1 -  distance_matrix[m][n]*1.0 / (m+n);
+		return Similarity;
 	}	
 }

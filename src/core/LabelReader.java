@@ -22,7 +22,7 @@ public class LabelReader {
 	  */
 	 public HashMap<String,String> getAllLabelData() throws IOException {
 		 ExcelHandler EH = new ExcelHandler(labelPath);		 
-		 List<List<List<String>>> data = EH.getAllData();
+		 List<List<List<String>>> data = EH.getWorkbookData();
 		 HashMap<String,String> Header2Label = new HashMap<String,String>();
  		 for (int sheetIndex = 0; sheetIndex < data.size(); sheetIndex++) {
  			 for (int rowIndex = 0; rowIndex < data.get(sheetIndex).size(); rowIndex++) {
