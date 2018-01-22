@@ -1,39 +1,64 @@
 package core;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import wordSeg.IKAnalyzerWordSeg;
 
 public class SimilarityHandler {
 	
-	private static Map<String,String> labelMap = null;
+	private static HashMap<String,String> headerTagMap = null;
+	private static HashMap<String,Double> headerWeightMap = null;
+	private static HashMap<String,List<String>> matchRecord = null;
+	private static TagHandler TH = null;
+	private static Word2Vec w2v = null;
+	private static double cosDistanceWeight = 0.5;
+	private static double editDistanceWeight = 0.5;
 	
 	/*
 	 * 构造函数 
 	 */
-	public SimilarityHandler(Map<String,String> Header2Label) {		
-		labelMap = Header2Label;
+	public SimilarityHandler() throws IOException {	
+		TH = new TagHandler();
+		headerTagMap = TH.getHeaderTagMap();
+		headerWeightMap = TH.getHeaderWeightMap();
+		matchRecord = new HashMap<String,List<String>>();
+		w2v = new Word2Vec();
 	}
 	
 	/*
-	 * 获取跟当前文本最为相似的标签
+	 * 获取跟当前文本最为相似的表头、对应标签，以及相似度
 	 * @return
 	 * @param text
 	 */
-	public String getLabel(String text, double threshold) {		
-		double maxSimilarty = 0;
-		String mostSimilarityOne = ""; 		
-		for (Entry<String, String> entry : labelMap.entrySet()) {			
-			double similarity = levenshteinSimilarity(text, entry.getKey());		    
-		    if (similarity > maxSimilarty) {
-		    	maxSimilarty = similarity ;
-		    	mostSimilarityOne = entry.getValue(); 
+	public List<String> getMostLikelyHeader(String header) {
+		if (matchRecord.containsKey(header)) return matchRecord.get(header);
+		
+		double maxSimilarity = 0;
+		String mostSimilarityOne = ""; 	
+		String tag = "";
+		for (Entry<String, String> entry : headerTagMap.entrySet()) {	
+		
+			double similarity = calculateSimilarity(header, entry.getKey()) * headerWeightMap.get(entry.getKey());	
+			System.out.println("计算“"+header+"”与“"+entry.getKey()+"”的相似度："+similarity);
+		    if (similarity > maxSimilarity) {
+		    	maxSimilarity = similarity ;
+		    	mostSimilarityOne = entry.getKey(); 
+		    	tag = entry.getValue();
 		    }		  
 		}  	
-		//System.out.println(text + " " + minEdit + " " + mostSimilarityOne + " "+text.length());
-		if ( maxSimilarty < threshold) return "";
-			else return mostSimilarityOne;		
+		List<String> res = new ArrayList<String>();
+		res.add(mostSimilarityOne);
+		res.add(tag);
+		res.add(String.valueOf(maxSimilarity));		
+		matchRecord.put(header, res);
+		
+		return res;		
 	}
+	
 	
 	/*
 	 * 判断是否存在一样的标签
@@ -41,8 +66,67 @@ public class SimilarityHandler {
 	 * @param text
 	 */
 	public boolean existLabel(String text) {	
-		return labelMap.containsKey(text);		
+		return headerTagMap.containsKey(text);		
 	}
+	
+	/*
+	 * 计算表头相似度
+	 * @return double 0~1
+	 * @param source target
+	 */
+	public double calculateSimilarity(String source, String target) {
+
+		IKAnalyzerWordSeg wordSeg = new IKAnalyzerWordSeg();           
+
+		List<String> sourceWordList = new ArrayList<String>();
+		List<String> targetWordList = new ArrayList<String>();
+		
+        String words[] = wordSeg.segMore(source).get("智能切分").split(" ");
+        for (int i = 0; i< words.length; i++) {
+        	sourceWordList.add(words[i]);
+        	//System.out.println(words[i]);
+        }
+        
+        //System.out.println("--------------------------------------------");
+        words = wordSeg.segMore(target).get("智能切分").split(" ");
+        for (int i = 0; i< words.length; i++) {
+        	targetWordList.add(words[i]);
+        	//System.out.println(words[i]);
+        }
+
+        double similarity = 0;
+        int upperSimilarity = 0;
+        if (sourceWordList.size() > targetWordList.size())
+        	upperSimilarity = sourceWordList.size();
+        else
+        	upperSimilarity = targetWordList.size();        
+        while (sourceWordList.size()>0 && targetWordList.size()>0) {
+        	double maxSimilarity = -1;
+        	int sw = 0;
+        	int tw = 0;
+        	for (int i = 0; i< sourceWordList.size(); i++) {
+        		String nowWord = sourceWordList.get(i);
+        		for (int j = 0; j< targetWordList.size(); j++) {
+        			double s1 = levenshteinSimilarity(nowWord, targetWordList.get(j));
+        			double s2 = w2v.calSimilarity(nowWord, targetWordList.get(j), s1);
+        			//double s3 = s1*cosDistanceWeight + s2*editDistanceWeight;
+        			if (s2>maxSimilarity) {
+            			maxSimilarity = s2;
+                    	sw = i;
+                    	tw = j;
+            		}
+        		}
+        	}
+        	//System.out.println(maxSimilarity+ " "+ sourceWordList.get(sw) + " " + targetWordList.get(tw));
+            similarity = similarity + maxSimilarity;
+        	sourceWordList.remove(sw);
+        	if (tw>=0)
+        		targetWordList.remove(tw);
+        }        	
+		return similarity / upperSimilarity;
+	}
+	
+	
 	/*
 	 * 编辑距离
 	 * @return double 0~1
@@ -84,4 +168,6 @@ public class SimilarityHandler {
 			Similarity = 1 -  distance_matrix[m][n]*1.0 / (m+n);
 		return Similarity;
 	}	
+	
+	
 }
