@@ -11,15 +11,18 @@ import core.ConfigHandler;
 import utils.FileCopy;
 
 public class SelectTaggingFile {
-	private static String inputDirPath = "1-全部文件";
-	private static String outputDirPath = "2-人工标注文件";	 
+	private static String inputDirPath = null;
+	private static String outputDirPath = null;	 
     private static String userDir = System.getProperty("user.dir");	 
+    private static double extractPercent;
     
     public static void main(String[] args) throws IOException {
     	
     	//----------------从配置文件中获取随机抽取率-------------------------
     	ConfigHandler CH = new ConfigHandler();		
-    	double extractPercent = Double.valueOf(CH.getConfig("TaggingExtractPercent"));
+    	extractPercent = Double.valueOf(CH.getConfig("TaggingExtractPercent"));
+    	inputDirPath = CH.getConfig("AllFileDir");
+    	outputDirPath = CH.getConfig("ManualTaggingFileDir");    	
     	
     	//----------------获取所有文件-----------------------------------
     	File file = new File(userDir+"\\"+inputDirPath);    

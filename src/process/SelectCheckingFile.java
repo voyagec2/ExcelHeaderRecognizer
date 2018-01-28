@@ -9,17 +9,20 @@ import core.ConfigHandler;
 import utils.FileCopy;
 
 public class SelectCheckingFile {
-	private static String inputDirPath = "3-完成自动标注的全部文件";
-	private static String outputDirPath = "4-人工抽检文件";	
-	private static final String EXCEL_XLS = "xls";  
-    private static final String EXCEL_XLSX = "xlsx";  
-    private static String userDir = System.getProperty("user.dir");	 
+	private static String inputDirPath = null;
+	private static String outputDirPath1 = null;
+	private static String outputDirPath2 = null;
+	private static String userDir = System.getProperty("user.dir");	 
+    private static double extractPercent;
     
     public static void main(String[] args) throws IOException {
     	
     	//----------------从配置文件中获取随机抽取率-------------------------
     	ConfigHandler CH = new ConfigHandler();		
-    	double extractPercent = Double.valueOf(CH.getConfig("CheckingExtractPercent"));
+    	extractPercent = Double.valueOf(CH.getConfig("CheckingExtractPercent"));
+    	inputDirPath = CH.getConfig("AutoTaggedFileDir");
+    	outputDirPath1 = CH.getConfig("ManualCheckingFileDir");
+    	outputDirPath2 = CH.getConfig("ManualCheckingBackupFileDir");    	
     	
     	//----------------获取所有文件-----------------------------------
     	File file = new File(userDir+"\\"+inputDirPath);    
@@ -48,9 +51,15 @@ public class SelectCheckingFile {
     					
     					System.out.println("抽取 " + fileName + " 成功！");
     					String inputPath = fileArray[r].getAbsolutePath();  
-    			        String outputPath= userDir+"\\"+outputDirPath+"\\"+ fileName;
-    			        FileCopy fileCopy=new FileCopy(inputPath, outputPath);  
-    			        fileCopy.copy1(); 
+    			        String outputPath1 = userDir+"\\"+outputDirPath1+"\\"+ fileName;
+    			        String outputPath2 = userDir+"\\"+outputDirPath2+"\\"+ fileName;    			        
+    			        
+    			        FileCopy fileCopy = new FileCopy(inputPath, outputPath1);	        
+    			        fileCopy.copy1();
+    			        
+    			        fileCopy = new FileCopy(inputPath, outputPath2);	        
+    			        fileCopy.copy2(); 
+    			        
     					break;
     				}    						
     			}    			

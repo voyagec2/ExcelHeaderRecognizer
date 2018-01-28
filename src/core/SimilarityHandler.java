@@ -14,9 +14,10 @@ public class SimilarityHandler {
 	private static HashMap<String,Double> headerWeightMap = null;
 	private static HashMap<String,List<String>> matchRecord = null;
 	private static TagHandler TH = null;
+	private static ConfigHandler CH = null;
 	private static Word2Vec w2v = null;
-	private static double cosDistanceWeight = 0.5;
-	private static double editDistanceWeight = 0.5;
+	private static double cosDistanceWeight;
+	private static double editDistanceWeight;
 	
 	/*
 	 * 构造函数 
@@ -25,6 +26,10 @@ public class SimilarityHandler {
 		TH = new TagHandler();
 		headerTagMap = TH.getHeaderTagMap();
 		headerWeightMap = TH.getHeaderWeightMap();
+		
+		CH = new ConfigHandler();
+		editDistanceWeight = Double.valueOf(CH.getConfig("EditDistanceWeight"));
+		cosDistanceWeight = 1.0 - editDistanceWeight;		
 		matchRecord = new HashMap<String,List<String>>();
 		w2v = new Word2Vec();
 	}
@@ -40,8 +45,7 @@ public class SimilarityHandler {
 		double maxSimilarity = 0;
 		String mostSimilarityOne = ""; 	
 		String tag = "";
-		for (Entry<String, String> entry : headerTagMap.entrySet()) {	
-		
+		for (Entry<String, String> entry : headerTagMap.entrySet()) {			
 			double similarity = calculateSimilarity(header, entry.getKey()) * headerWeightMap.get(entry.getKey());	
 			System.out.println("计算“"+header+"”与“"+entry.getKey()+"”的相似度："+similarity);
 		    if (similarity > maxSimilarity) {
@@ -109,9 +113,9 @@ public class SimilarityHandler {
         		for (int j = 0; j< targetWordList.size(); j++) {
         			double s1 = levenshteinSimilarity(nowWord, targetWordList.get(j));
         			double s2 = w2v.calSimilarity(nowWord, targetWordList.get(j), s1);
-        			//double s3 = s1*cosDistanceWeight + s2*editDistanceWeight;
-        			if (s2>maxSimilarity) {
-            			maxSimilarity = s2;
+        			double s3 = s1*editDistanceWeight + s2*cosDistanceWeight;
+        			if (s3>maxSimilarity) {
+            			maxSimilarity = s3;
                     	sw = i;
                     	tw = j;
             		}

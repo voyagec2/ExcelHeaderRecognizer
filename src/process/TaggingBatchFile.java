@@ -25,23 +25,24 @@ import core.SimilarityHandler;
 import core.TagHandler;
 import core.TaggingInfo;
 
-public class Tagging {
-	private static String inputDirPath = "1-全部文件";
-	private static String outputDirPath = "3-完成自动标注的全部文件";	
+public class TaggingBatchFile {
+	private static String inputDirPath = null;
+	private static String outputDirPath = null;	
 	private static final String EXCEL_XLS = "xls";  
     private static final String EXCEL_XLSX = "xlsx";  
     private static String userDir = System.getProperty("user.dir");
-    
+    private static double similarityThreshold;
 	public static void main(String[] args) throws IOException {
 		//System.out.println(userDir);
-		
+		//----------------从配置文件中获取配置信息-------------------------
 		ConfigHandler CH = new ConfigHandler();	
-		double similarityThreshold = Double.valueOf(CH.getConfig("SimilarityThreshold"));
-		SimilarityHandler SH = new SimilarityHandler();
-		//List<String> daa = SH.getMostLikelyHeader("序号");
-		//System.out.println(daa.get(2));
-		//double t = SH.calculateSimilarity("序号", "序号");
-		//System.out.println(t);
+		similarityThreshold = Double.valueOf(CH.getConfig("SimilarityThreshold"));
+		inputDirPath = CH.getConfig("BatchTaggingFileDir");
+		outputDirPath = CH.getConfig("BatchTaggedFileOutDir");		
+		
+		//----------------------------------------------------------------------
+		SimilarityHandler SH = new SimilarityHandler();		
+		
 		List<TaggingInfo> report = new ArrayList<TaggingInfo>(); 
 		
 		File file = new File(userDir+"\\"+inputDirPath);    
