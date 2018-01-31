@@ -22,6 +22,7 @@ public class ConfigHandler {
 			String[] info = null;
 			info = s.split("=");
 			if (info.length<2) continue;
+			//System.out.println(info[0]+"  " + info[1]);
 			map.put(info[0],info[1]);
 		}	
 		configMap = map;

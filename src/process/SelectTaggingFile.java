@@ -24,6 +24,7 @@ public class SelectTaggingFile {
     	inputDirPath = CH.getConfig("AllFileDir");
     	outputDirPath = CH.getConfig("ManualTaggingFileDir");    	
     	
+    	System.out.println(inputDirPath);
     	//----------------获取所有文件-----------------------------------
     	File file = new File(userDir+"\\"+inputDirPath);    
         File[] fileArray = file.listFiles(); 

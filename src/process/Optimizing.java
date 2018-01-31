@@ -7,13 +7,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import core.ConfigHandler;
 import core.ExcelHandler;
 import core.TagHandler;
 
 public class Optimizing {
-	private static String tagLibPath = "标签库.xlsx";
-	private static String afterCheckDirPath = "人工质检后的标注文件";
-	private static String labeledDirPath = "标注文件输出";
+	private static String beferCheckDirPath = null;
+	private static String afterCheckDirPath = null;
 	private static String outputPath = "优化报告.txt";
 	private static String userDir = System.getProperty("user.dir");		
 	private static final String EXCEL_XLS = "xls";  
@@ -21,9 +21,16 @@ public class Optimizing {
     
 	public static void main(String[] args) throws IOException {
 		
+		
+		//----------------从配置文件中获取随机抽取率-------------------------
+    	ConfigHandler CH = new ConfigHandler();		
+    	beferCheckDirPath = CH.getConfig("ManualCheckingBackupFileDir");
+    	afterCheckDirPath = CH.getConfig("ManualCheckingFileDir");
+
+    	
         
-      //------------------读取质检前的标签信息----------------------------
-        File file2 = new File(userDir+"\\"+labeledDirPath);    
+      //------------------读取抽检前的标签信息----------------------------
+        File file2 = new File(userDir+"\\"+beferCheckDirPath);    
         File[] fileArray = file2.listFiles(); 
         Map<String,String> beforeCheck = new HashMap<String,String>();
         
@@ -31,7 +38,7 @@ public class Optimizing {
             if(fileArray[fileIndex].isFile()){     
                 String fileName = fileArray[fileIndex].getName();
             	if (fileName.endsWith(EXCEL_XLS) || fileName.endsWith(EXCEL_XLSX)) {   //确定是EXCEL文件
-            		ExcelHandler EH = new ExcelHandler(userDir+"\\"+labeledDirPath+"\\"+fileName);   //打开这个excel       		           		
+            		ExcelHandler EH = new ExcelHandler(userDir+"\\"+beferCheckDirPath+"\\"+fileName);   //打开这个excel       		           		
             		int sheetNum = EH.getSheetNum();  //获取sheet数量            		
             		for (int sheetIndex = 0; sheetIndex < sheetNum; sheetIndex++){    //Sheet层 
             			List<String> headers = EH.getHeaders(sheetIndex);
@@ -47,6 +54,7 @@ public class Optimizing {
         
         TagHandler TR = new TagHandler();
 		HashMap<String,String> tagMap = TR.getHeaderTagMap();	
+		
 		//----------------------读取质检后的标签信息,并比对----------------------
 		
         FileOutputStream report = new FileOutputStream(new File(userDir+"\\"+outputPath)); 

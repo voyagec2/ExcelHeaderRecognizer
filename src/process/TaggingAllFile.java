@@ -1,6 +1,7 @@
 package process;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -13,11 +14,13 @@ import java.util.List;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import core.ConfigHandler;
 import core.ExcelHandler;
@@ -37,15 +40,18 @@ public class TaggingAllFile {
 		//----------------从配置文件中获取配置信息-------------------------
 		ConfigHandler CH = new ConfigHandler();	
 		similarityThreshold = Double.valueOf(CH.getConfig("SimilarityThreshold"));
+		
 		inputDirPath = CH.getConfig("AllFileDir");
 		outputDirPath = CH.getConfig("AutoTaggedFileDir");		
-		
+
 		//----------------------------------------------------------------------
 		SimilarityHandler SH = new SimilarityHandler();		
 		
 		List<TaggingInfo> report = new ArrayList<TaggingInfo>(); 
 		
-		File file = new File(userDir+"\\"+inputDirPath);    
+		File file = new File(userDir+"\\"+inputDirPath); 
+		
+		System.out.println(inputDirPath);
         File[] fileArray = file.listFiles(); 
         
         for(int fileIndex=0;fileIndex<fileArray.length;fileIndex++){      //文件层
@@ -109,31 +115,70 @@ public class TaggingAllFile {
     	SimpleDateFormat dateFormat = new SimpleDateFormat("HH时mm分ss秒");//可以方便地修改日期格式
     	String time = dateFormat.format( now );    	
     	
-    	FileOutputStream reportFile = new FileOutputStream(new File(userDir+"\\"+"标注报告"+time+".txt")); ;     
- 
+    	@SuppressWarnings("resource")
+		Workbook wb = new XSSFWorkbook();
     	
-    	reportFile.write(("采用标注策略: \r\n").getBytes());    	
-    	reportFile.write(("1.获取标签库中与当前表头拥有最高相似度的表头\r\n").getBytes());
-    	reportFile.write(("2.若最高相似度小于相似度度阈值，则留空\r\n").getBytes());
-    	reportFile.write(("相似度阈值: "+String.valueOf(similarityThreshold)+"\r\n").getBytes());
-    	reportFile.write(("-----------------------------------------------\r\n").getBytes());
-    	reportFile.write(("表头-标签总数: "+String.valueOf(report.size())+"\r\n").getBytes());   
+    	Sheet sheet = wb.createSheet();	    	
     	
+    	Row header = sheet.createRow(0);
     	
+    	Cell cell1 = header.createCell(0);
+    	cell1.setCellValue("表头");
+    	
+    	Cell cell2 = header.createCell(1);
+    	cell2.setCellValue("最相似表头");
+    	
+    	Cell cell3 = header.createCell(2);
+    	cell3.setCellValue("标签");
+    	
+    	Cell cell4 = header.createCell(3);
+    	cell4.setCellValue("是否留空");
+    	
+    	Cell cell5 = header.createCell(4);
+    	cell5.setCellValue("相似度");
+    	
+    	Cell cell6 = header.createCell(5);
+    	cell6.setCellValue("所在文件");
+    	
+    	Cell cell7 = header.createCell(6);
+    	cell7.setCellValue("所在SheetIndex");
     	
     	for (int i = 0; i< report.size()-1; i++) { 
+    		Row row = sheet.createRow(i+1);
     		TaggingInfo info = report.get(i);
-    		reportFile.write(("-------------------------------\r\n").getBytes());
-    		reportFile.write(("表头: "+ info.getHeader() +"\r\n").getBytes()); 
-    		reportFile.write(("最相似表头: "+ info.getMostLikelyHeader() +"\r\n").getBytes()); 
-    		reportFile.write(("标签: "+ info.getTag() +"\r\n").getBytes());
-    		reportFile.write(("是否留空: "+ info.getIsStayEmpty() +"\r\n").getBytes());
-    		reportFile.write(("相似度: "+ String.valueOf(info.getSimilarty()) +"\r\n").getBytes());
-    		reportFile.write(("所在文件: "+ info.getBelongExcel() +"\r\n").getBytes());
-    		reportFile.write(("所在SheetIndex: "+ String.valueOf(info.getBelongSheet()) +"\r\n").getBytes());    		
+    		cell1 = row.createCell(0);
+        	cell1.setCellValue(info.getHeader());
+        	
+        	cell2 = row.createCell(1);
+        	cell2.setCellValue(info.getMostLikelyHeader());
+        	
+        	cell3 = row.createCell(2);
+        	cell3.setCellValue(info.getTag());
+        	
+        	cell4 = row.createCell(3);
+        	cell4.setCellValue(info.getIsStayEmpty());
+        	
+        	cell5 = row.createCell(4);
+        	cell5.setCellValue(info.getSimilarty());
+        	
+        	cell6 = row.createCell(5);
+        	cell6.setCellValue(info.getBelongExcel());
+        	
+        	cell7 = row.createCell(6);        	
+        	cell7.setCellValue(info.getBelongSheet());
+        	  		
     	}
     	
-    	reportFile.close();
+    	FileOutputStream fileOut;  
+        try {  
+            fileOut = new FileOutputStream(userDir+"\\"+"标注报告"+time+".xls");  
+            wb.write(fileOut);  
+            fileOut.close();  
+        } catch (FileNotFoundException e) {  
+            e.printStackTrace();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        }  
     	
         System.out.println("按回车键退出");
     	while(true){
