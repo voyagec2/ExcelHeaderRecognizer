@@ -35,10 +35,13 @@ public class TaggingBatchFile {
     private static String userDir = System.getProperty("user.dir");
     private static double similarityThreshold;
 	public static void main(String[] args) throws IOException {
-		//System.out.println(userDir);
+
+		String fileName = null;
+		
+		try {
 		//----------------从配置文件中获取配置信息-------------------------
 		ConfigHandler CH = new ConfigHandler();	
-		similarityThreshold = Double.valueOf(CH.getConfig("SimilarityThreshold"));
+		similarityThreshold = Double.valueOf(CH.getConfig("﻿SimilarityThreshold"));
 		inputDirPath = CH.getConfig("BatchTaggingFileDir");
 		outputDirPath = CH.getConfig("BatchTaggedFileOutDir");		
 		
@@ -52,7 +55,7 @@ public class TaggingBatchFile {
         
         for(int fileIndex=0;fileIndex<fileArray.length;fileIndex++){      //文件层
             if(fileArray[fileIndex].isFile()){     
-                String fileName = fileArray[fileIndex].getName();
+                fileName = fileArray[fileIndex].getName();
                 System.out.println("准备处理"+fileName+":");
             	if (fileName.endsWith(EXCEL_XLS) || fileName.endsWith(EXCEL_XLSX)) {   //确定是EXCEL文件
             		ExcelHandler EH = new ExcelHandler(userDir+"\\"+inputDirPath+"\\"+fileName);   //打开这个excel       		
@@ -176,6 +179,28 @@ public class TaggingBatchFile {
             e.printStackTrace();  
         }  
     	
+		 }
+	   	catch (Exception e) {
+	   		System.out.println("出现异常，程序中止操作，请排查后重新运行");
+	   		
+	   		Date now = new Date();   	
+	   	    SimpleDateFormat dateFormat = new SimpleDateFormat("HH时mm分ss秒");//可以方便地修改日期格式
+	   		String time = dateFormat.format( now );
+	   		FileOutputStream fileOut;  
+	           try {  
+	               fileOut = new FileOutputStream(userDir+"\\"+"异常日志"+".log");  
+	               fileOut.write("--------------------------------------------------------\r\n".getBytes());
+	               
+	               fileOut.write((time+ ", 标注批次文件时出错: " +  fileName + ": \r\n").getBytes());            
+	               fileOut.write(("异常信息: " + e.getMessage() +": \r\n").getBytes());	                
+	               fileOut.write(("异常信息: " + e.toString() +": \r\n").getBytes());
+	               	            
+	               fileOut.close();  
+	           } 
+	           catch (Exception ex) {  
+	   			ex.printStackTrace();  
+	   		}  
+	   	}
     	
         System.out.println("按回车键退出");
     	while(true){

@@ -1,8 +1,11 @@
 package process;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +21,10 @@ public class SelectTaggingFile {
     
     public static void main(String[] args) throws IOException {
     	
+    	String fileName = null;
+    	
+    	try{
+    		
     	//----------------从配置文件中获取随机抽取率-------------------------
     	ConfigHandler CH = new ConfigHandler();		
     	extractPercent = Double.valueOf(CH.getConfig("TaggingExtractPercent"));
@@ -43,7 +50,7 @@ public class SelectTaggingFile {
     	for (int i = 0; i < extractNumber; i++) {    //随机抽取文件    			
     			while (true) {
     				r = random.nextInt(fileTotal);
-    				String fileName = fileArray[r].getName();                    				
+    				fileName = fileArray[r].getName();                    				
     				if (extractFileName.containsKey(fileName)) {  					
     					continue;
     				}
@@ -59,7 +66,32 @@ public class SelectTaggingFile {
     				}    						
     			}    			
     	}
-        
+    	
+    	
+		}
+		catch (Exception e) {
+			System.out.println("出现异常，程序中止操作，请排查后重新运行");
+			
+			Date now = new Date();   	
+		    SimpleDateFormat dateFormat = new SimpleDateFormat("HH时mm分ss秒");//可以方便地修改日期格式
+			String time = dateFormat.format( now );
+			FileOutputStream fileOut;  
+	        try {  
+	            fileOut = new FileOutputStream(userDir+"\\"+"异常日志"+".log");  
+	            fileOut.write("--------------------------------------------------------\r\n".getBytes());
+	            
+	            fileOut.write((time+ ", 抽取人工标注文件时出错: " + fileName +": \r\n").getBytes());            
+	            fileOut.write(("异常信息: " + e.getMessage() +": \r\n").getBytes());	                
+	            fileOut.write(("异常信息: " + e.toString() +": \r\n").getBytes());
+	            	            
+	            fileOut.close();  
+	        } 
+	        catch (Exception ex) {  
+				ex.printStackTrace();  
+			}  
+		}
+		
+		
     	System.out.println("按回车键退出");
     	while(true){
     		   if(System.in.read() == '\n')
